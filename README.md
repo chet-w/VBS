@@ -15,6 +15,17 @@ Using CSS animations and transitions allowed for the creation of a more dynamic 
 ### Back-End
 Through AngularJS, the Application has a single JavaScript file that handles the dynamic features like routing, form validation, and showing and hiding elements. Additionally, the Application interacts with a server onsite at VUW which holds JSON data about each User, Course, Assignment, etc., to achieve the MVC design intended for the application - the user interacts with the View through HTML, the  JS Controller handles the core logic and local data, before passing on changes to a remote server Model.
 
+### Demo
+See it in action at https://chet-w.github.io/VBS/. 
+
+#### Logins
+* Username: chet
+  Password: password
+  UserType: lecturer
+* Username: daniel
+  Password: password
+  UserType: student
+
 ## Usage
 ### For Lecturers
 Users with the status of 'Lecturer' have more powers within the application compared to 'Students'. Lecturers can:

@@ -1,0 +1,607 @@
+<html lang="en" ng-app="vbs" class="no-js">
+
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>My AngularJS App</title>
+  <meta name="description" content="">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="style.css">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.6.9/angular.min.js"></script>
+</head>
+
+<body>
+  <div ng-controller="main">
+    <div class="login-view view" ng-show="view == 'login'">
+      <div class="container-main">
+        <canvas class="bottom-angle-shape"></canvas>
+        <canvas class="top-angle-shape"></canvas>
+        <div class="vuw-logo-container">
+          <div class="login-logo">
+            <!-- <img src="../img/logo-white.png" title="logo" /> -->
+          </div>
+        </div>
+        <div class="login-container">
+          <h1>Welcome to VBS</h1>
+          <form class="login-form">
+            <div class="login-heading">Enter Your Details</div>
+            <p id="note"></p>
+            <input id="userN" placeholder="Username" type="text" required ng-model="login.username" autofocus>
+            <br>
+            <input id="passW" placeholder="Password" type="password" required ng-model="login.password">
+            <br>
+            <input class="login-button" type="submit" value="Log In" ng-click="checkLogin(login)" />
+          </form>
+          <div ng-if="showLoginError">
+            Incorrect Username or Password
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="directory-view view" id="directory" ng-show="view == 'directory'">
+      <div id="mobile-overlay">
+        <ul id="mobile-menu-options">
+          <h1>Menu</h1>
+          <li ng-click="openDirectory()">Course Directory</li>
+          <li ng-click="openFeed()" ng-if="currentUser.UserType == 'student'">Course Feed</li>
+          <li ng-click="openAssignments()" ng-if="currentUser.UserType == 'student'">Assignments</li>
+          <hr/>
+          <h2 ng-if="currentCourse.ID !== undefined">{{currentCourse.Name}}</h2>
+          <li ng-click="changeTab('home')" ng-if="currentCourse.ID !== undefined">Home</li>
+          <li ng-click="changeTab('assignments')" ng-if="currentCourse.ID !== undefined">Assignments</li>
+          <li ng-click="changeTab('timetable')" ng-if="currentCourse.ID !== undefined">Timetable</li>
+          <li ng-click="changeTab('contact')" ng-if="currentCourse.ID !== undefined">Contact</li>
+
+          <li ng-click="logout()">Logout</li>
+        </ul> 
+      </div>
+      <div id="add-course-overlay">
+      </div>
+      <div ng-show="showAddCourseModal" id="add-course-modal">
+        <div class="container">
+          <h1>Add a Course</h1>
+          <p>Fill out the fields below to add a new Course to the Directory.</p>
+          <form id="add-course-form" class="add-course-form" name="newCourse">
+            <div class="add-course-container">
+              <div class="add-course-section">
+                <div class="input-panel">
+                  <input name="code" ng-model="course.ID" type="text" class="input-floater" required/>
+                  <i ng-show="(newCourse.code.$touched && codeValid(course.ID)) || (newCourse.code.$touched && newCourse.code.$invalid)" class="material-icons validation-error">error</i>
+                  <i ng-show="newCourse.code.$touched && newCourse.code.$valid && !codeValid(course.ID)" class="material-icons validation-good">check_circle</i>
+                  <span class="floating-label">Course Code</span>
+                </div>
+
+                <div class="input-panel">
+                  <input name="name" ng-model="course.Name" type="text" class="input-floater" required/>
+                  <i ng-show="(newCourse.name.$touched && nameValid(course.Name)) || (newCourse.name.$touched && newCourse.name.$invalid)" class="material-icons validation-error">error</i>
+                  <i ng-show="newCourse.name.$touched && newCourse.name.$valid && !nameValid(course.Name)" class="material-icons validation-good">check_circle</i>
+                  <span class="floating-label">Course Name</span>
+                </div>
+
+                <div class="textarea-panel">
+                  <textarea name="overview" ng-model="course.Overview" class="input-floater" rows="3" required></textarea>
+                  <i ng-show="newCourse.overview.$touched && newCourse.overview.$invalid" class="material-icons validation-error">error</i>
+                  <i ng-show="newCourse.overview.$touched && overviewCourse.overview.$valid" class="material-icons validation-good">check_circle</i>
+                  <span class="floating-label-textarea">Course Overview</span>
+                </div>
+
+                <div class="input-panel">
+                  <input name="lecturers" ng-model="course.LecturerID" list="lecturers" class="input-floater" required/>
+                  <i ng-show="(newCourse.lecturers.$touched && !lecturersValid(course.LecturerID)) || (newCourse.lecturers.$touched && newCourse.lecturers.$invalid)" class="material-icons validation-error">error</i>
+                  <i ng-show="newCourse.lecturers.$touched && newCourse.lecturers.$valid && lecturersValid(course.LecturerID)" class="material-icons validation-good">check_circle</i>
+                  <span class="floating-label">Lecturer</span>
+                </div>
+              </div>
+              <div class="add-course-section">
+                <div class="input-panel">
+                  <input name="times" ng-model="course.LectureTimes" list="lecture-times" class="input-floater" required/>
+                  <i ng-show="(newCourse.times.$touched && !timesValid(course.LectureTimes)) || (newCourse.times.$touched && newCourse.times.$invalid)" class="material-icons validation-error">error</i>
+                  <i ng-show="newCourse.times.$touched && newCourse.times.$valid && timesValid(course.LectureTimes)" class="material-icons validation-good">check_circle</i>
+                  <span class="floating-label">Lecture Time</span>
+                </div>
+
+                <div class="input-panel">
+                  <input name="trimester" ng-model="course.Trimester" list="tris" class="input-floater" required/>
+                  <i ng-show="(newCourse.trimester.$touched && !trimesterValid(course.Trimester)) || (newCourse.trimester.$touched && newCourse.trimester.$invalid)" class="material-icons validation-error">error</i>
+                  <i ng-show="newCourse.trimester.$touched && newCourse.trimester.$valid && trimesterValid(course.Trimester)" class="material-icons validation-good">check_circle</i>
+                  <span class="floating-label">Trimester</span>
+                </div>
+
+                <div class="input-panel">
+                  <input name="year" ng-model="course.year" list="years" placeholder="Year" class="input-floater" required/>
+                  <i ng-show="(newCourse.year.$touched && !yearValid(course.year)) || (newCourse.year.$touched && newCourse.year.$invalid)" class="material-icons validation-error">error</i>
+                  <i ng-show="newCourse.year.$touched && newCourse.year.$valid && yearValid(course.year )" class="material-icons validation-good">check_circle</i>
+                </div>
+
+                <div class="input-panel">
+                  <button ng-click="saveCourse(course)" class="primary">Save Course</button>
+                  <button class="secondary" ng-click="closeAddCourseModal()">Close</button>
+                </div>
+
+                <datalist id="lecturers">
+                  <option ng-repeat="lect in lecturers" value="{{lect.ID}}">
+                </datalist>
+                <datalist id="tris">
+                  <option ng-repeat="tri in trimesters" value="{{tri}}">
+                </datalist>
+                <datalist id="years">
+                  <option ng-repeat="year in years" value="{{year}}">
+                </datalist>
+                <datalist id="lecture-times">
+                  <option ng-repeat="time in lectureTimes" value="{{time}}">
+                </datalist>
+              </div>
+            </div>
+
+
+
+          </form>
+        </div>
+      </div>
+      <!--Menu-->
+      <div class="header">
+        <i ng-click="openHome()" class="material-icons header-logo">account_balance</i>
+        <span class="header-logo-subtitle">VBS</span>
+        <ul>
+          <button ng-click="openDirectory()" Class="left-button"><i class="material-icons">list</i> Course Directory</button>
+          <button ng-if="currentUser.UserType == 'student'" ng-click="openFeed()" Class="left-button"><i class="material-icons">assignment_ind</i> Course Feed</button>
+          <button ng-if="currentUser.UserType == 'student'" ng-click="openAssignments()" Class="left-button"><i class="material-icons">assignment</i> My Assignments</button>
+          <button Class="right-button" ng-click="logout()"><i class="material-icons">account_box</i></button>
+        </ul>
+      </div>
+      <div class="mobile-menu" ng-click="toggleMobileMenu()">
+        <div class="bar" id="top"></div>
+        <div class="bar" id="center"></div>
+        <div class="bar" id="bottom"></div>
+      </div>
+      <div class="body">
+        <div class="container">
+          <h1>Course Directory</h1>
+          <p>You can find a full list of all the Courses on offer from VBS here.</p>
+          <input class="course-search" placeholder="Or search for a course" ng-model="query" />
+          <button ng-if="currentUser.UserType === 'lecturer'" ng-click='openAddCourseModal()' class="add-course">Add a Course</button>
+          <div class="course-table">
+            <table>
+              <tr class="heading">
+                <th>Course Code</th>
+                <th>Course Name</th>
+                <th>Trimester</th>
+                <th ng-if="currentUser.UserType == 'lecturer'">Delete</th>
+
+              </tr>
+              <tr ng-click="openCourse(course)" ng-repeat="course in courses  | filter: query">
+                <td>{{course.ID}}</td>
+                <td>{{course.Name}}</td>
+                <td>{{course.Trimester}}</td>
+                <td ng-if="currentUser.UserType == 'lecturer'" ng-click="deleteCourse(course)">
+                  <i class="material-icons delete">delete</i>
+                </td>
+
+              </tr>
+            </table>
+          </div> 
+          <div id="course-added-notif">
+            <i class="material-icons">check_circle</i> {{lastAddedCourse.ID}} - {{lastAddedCourse.Name}} was just added to the Course Directory.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="feed-view view" id="feed" ng-show="view == 'feed'">
+      <!--Menu-->
+      <div id="mobile-overlay">
+        <ul id="mobile-menu-options">
+          <h1>Menu</h1>
+          <li ng-click="openDirectory()">Course Directory</li>
+          <li ng-click="openFeed()" ng-if="currentUser.UserType == 'student'">Course Feed</li>
+          <li ng-click="openAssignments()" ng-if="currentUser.UserType == 'student'">Assignments</li>
+          
+          <hr/>
+          <h2 ng-if="currentCourse.ID !== undefined">{{currentCourse.Name}}</h2>
+          <li ng-click="changeTab('home')" ng-if="currentCourse.ID !== undefined">Home</li>
+          <li ng-click="changeTab('assignments')" ng-if="currentCourse.ID !== undefined">Assignments</li>
+          <li ng-click="changeTab('timetable')" ng-if="currentCourse.ID !== undefined">Timetable</li>
+          <li ng-click="changeTab('contact')" ng-if="currentCourse.ID !== undefined">Contact</li>
+          <li ng-click="logout()">Logout</li>
+        </ul>
+      </div>
+      <div class="header">
+        <i ng-click="openHome()" class="material-icons header-logo">account_balance</i>
+        <span class="header-logo-subtitle">VBS</span>
+        <ul>
+          <button ng-click="openDirectory()" Class="left-button"><i class="material-icons">list</i> Course Directory</button>
+          <button ng-if="currentUser.UserType == 'student'" ng-click="openFeed()" Class="left-button"><i class="material-icons">assignment_ind</i> Course Feed</button>
+          <button ng-if="currentUser.UserType == 'student'" ng-click="openAssignments()" Class="left-button"><i class="material-icons">assignment</i> My Assignments</button>
+          <button Class="right-button" ng-click="logout()"><i class="material-icons">account_box</i></button>
+        </ul>
+      </div>
+      <div class="mobile-menu" ng-click="toggleMobileMenu()">
+        <div class="bar" id="top"></div>
+        <div class="bar" id="center"></div>
+        <div class="bar" id="bottom"></div>
+      </div>
+      <div class="body">
+        <div class="container">
+          <h1>Course Feed</h1>
+          <p>You can find all the courses you're enrolled in here. </p>
+          <p>If you want to add a course to your feed, you can add it to your feed through the Course's Page via the Course Directory. </p>
+
+          <div class="course-table">
+            <table>
+              <tr class="heading">
+                <th>Course Code</th>
+                <th>Course Name</th>
+                <th>Trimester</th>
+                <th>Remove</th>
+              </tr>
+              <tr ng-click="openCourse(course)" ng-repeat="course in studentsFeed track by $index">
+                <td>{{course.ID}}</td>
+                <td>{{course.Name}}</td>
+                <td>{{course.Trimester}}</td>
+                <td ng-click="removeCourseFromFeed(course)">
+                  <i class="material-icons delete">clear</i>
+                </td>
+              </tr>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="course-view view" id="course" ng-show="view == 'course'">
+      <div id="mobile-overlay">
+        <ul id="mobile-menu-options">
+          <h1>Menu</h1>
+          <li ng-click="openDirectory()">Course Directory</li>
+          <li ng-click="openFeed()" ng-if="currentUser.UserType == 'student'">Course Feed</li>
+          <li ng-click="openAssignments()" ng-if="currentUser.UserType == 'student'">Assignments</li>
+          <hr/>
+          <h2 ng-if="currentCourse.ID !== undefined">{{currentCourse.Name}}</h2>
+          <li ng-click="changeTab('home')" ng-if="currentCourse.ID !== undefined">Home</li>
+          <li ng-click="changeTab('assignments')" ng-if="currentCourse.ID !== undefined">Assignments</li>
+          <li ng-click="changeTab('timetable')" ng-if="currentCourse.ID !== undefined">Timetable</li>
+          <li ng-click="changeTab('contact')" ng-if="currentCourse.ID !== undefined">Contact</li>
+          <li ng-click="logout()">Logout</li>
+        </ul>
+      </div>
+      <div id="assignments-overlay"></div>
+      <div ng-show="showAssignmentsModal" id="assignments-modal">
+        <div class="container">
+          <h1>Edit Assignment</h1>
+          <p>Fill out the fields you want to edit the details for the Assignment.</p>
+          <form id="assignments-form" class="add-course-form" name="assignment">
+            <div class="add-course-container">
+              <div class="assignments-section">
+                <div class="input-panel">
+                  <input placeholder="Assignment Name" name="name" ng-model="data.Name" type="text" class="input-floater" ng-value="currentAssignment.Name" />
+                  <i ng-show="assignment.name.$touched || (assignment.name.$touched && assignment.name.$invalid)" class="material-icons validation-error">error</i>
+                  <i ng-show="assignment.name.$touched && assignment.name.$valid && !codeValid(course.ID)" class="material-icons validation-good">check_circle</i>
+
+                </div>
+
+                <div class="textarea-panel">
+                  <textarea placeholder="Assignment Overview" name="overview" ng-model="data.Overview" class="input-floater" rows="3" ng-value="currentAssignment.Overview"></textarea>
+                  <i ng-show="assignment.overview.$touched && assignment.overview.$invalid" class="material-icons validation-error">error</i>
+                  <i ng-show="assignment.overview.$touched && assignment.overview.$valid" class="material-icons validation-good">check_circle</i>
+
+                </div>
+
+                <div class="input-panel">
+                  <input placeholder="Due Date" name="due" ng-model="data.DueDate" type="text" class="input-floater" ng-value="currentAssignment.DueDate" />
+                  <i ng-show="(assignment.due.$touched && assignment.due.$invalid)" class="material-icons validation-error">error</i>
+                  <i ng-show="assignment.due.$touched && assignment.due.$valid" class="material-icons validation-good">check_circle</i>
+                </div>
+
+                <div class="input-panel">
+                  <button class="primary" ng-click="saveAssignment(data)">Save Assignment</button>
+                  <button class="secondary" ng-click="closeAssignmentsModal()">Close</button>
+                </div>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+      <div ng-show="showAddAssignmentsModal" id="add-assignments-modal">
+        <div class="container">
+          <h1>Add Assignment</h1>
+          <p>Fill out the fields you want to edit the details for the Assignment.</p>
+          <form id="add-assignments-form" class="add-course-form" name="addAssignment">
+            <div class="add-course-container">
+              <div class="assignments-section">
+                <div class="input-panel">
+                  <input placeholder="Assignment Name" name="name" ng-model="data.Name" type="text" class="input-floater"  />
+                  <i ng-show="assignment.name.$touched || (assignment.name.$touched && assignment.name.$invalid)" class="material-icons validation-error">error</i>
+                  <i ng-show="assignment.name.$touched && assignment.name.$valid && !codeValid(course.ID)" class="material-icons validation-good">check_circle</i>
+
+                </div>
+
+                <div class="textarea-panel">
+                  <textarea placeholder="Assignment Overview" name="overview" ng-model="data.Overview" class="input-floater" rows="3"></textarea>
+                  <i ng-show="assignment.overview.$touched && assignment.overview.$invalid" class="material-icons validation-error">error</i>
+                  <i ng-show="assignment.overview.$touched && assignment.overview.$valid" class="material-icons validation-good">check_circle</i>
+
+                </div>
+
+                <div class="input-panel">
+                  <input placeholder="Due Date" name="due" ng-model="data.DueDate" type="text" class="input-floater" />
+                  <i ng-show="(assignment.due.$touched && assignment.due.$invalid)" class="material-icons validation-error">error</i>
+                  <i ng-show="assignment.due.$touched && assignment.due.$valid" class="material-icons validation-good">check_circle</i>
+                </div>
+
+                <div class="input-panel">
+                  <button class="primary" ng-click="saveNewAssignment(data)">Save Assignment</button>
+                  <button class="secondary" ng-click="closeAddAssignmentsModal()">Close</button>
+                </div>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+      <div id="edit-course-overlay"></div>
+      <div ng-show="showEditCourseModal" id="edit-course-modal">
+        <div class="container">
+          <h1>Edit Course {{currentCourse.ID}}</h1>
+          <p>Fill out the fields you want to edit the details for {{currentCourse.ID}}.</p>
+          <form id="edit-course-form" class="add-course-form" name="newCourse">
+            <div class="add-course-container">
+              <div class="add-course-section">
+                <div class="input-panel">
+                  <input placeholder="Course ID" name="code" ng-model="course.ID" type="text" class="input-floater" ng-value="currentCourse.ID" />
+                  <i ng-show="(newCourse.code.$touched && codeValid(course.ID)) || (newCourse.code.$touched && newCourse.code.$invalid)" class="material-icons validation-error">error</i>
+                  <i ng-show="newCourse.code.$touched && newCourse.code.$valid && !codeValid(course.ID)" class="material-icons validation-good">check_circle</i>
+
+                </div>
+
+                <div class="input-panel">
+                  <input placeholder="Course Name" name="name" ng-model="course.Name" type="text" class="input-floater" ng-value="currentCourse.Name" />
+                  <i ng-show="(newCourse.name.$touched && nameValid(course.Name)) || (newCourse.name.$touched && newCourse.name.$invalid)" class="material-icons validation-error">error</i>
+                  <i ng-show="newCourse.name.$touched && newCourse.name.$valid && !nameValid(course.Name)" class="material-icons validation-good">check_circle</i>
+
+                </div>
+
+                <div class="textarea-panel">
+                  <textarea placeholder="Course Overview" name="overview" ng-model="course.Overview" class="input-floater" rows="3" ng-value="currentCourse.Overview"></textarea>
+                  <i ng-show="newCourse.overview.$touched && newCourse.overview.$invalid" class="material-icons validation-error">error</i>
+                  <i ng-show="newCourse.overview.$touched && overviewCourse.overview.$valid" class="material-icons validation-good">check_circle</i>
+
+                </div>
+
+                <div class="input-panel">
+                  <input placeholder="Lecturer" name="lecturers" ng-model="course.LecturerID" list="lecturers" class="input-floater" ng-value="currentCourse.LecturerID" />
+                  <i ng-show="(newCourse.lecturers.$touched && !lecturersValid(course.LecturerID)) || (newCourse.lecturers.$touched && newCourse.lecturers.$invalid)" class="material-icons validation-error">error</i>
+                  <i ng-show="newCourse.lecturers.$touched && newCourse.lecturers.$valid && lecturersValid(course.LecturerID)" class="material-icons validation-good">check_circle</i>
+
+                </div>
+              </div>
+              <div class="add-course-section">
+                <div class="input-panel">
+                  <input placeholder="Lecture Times" name="times" ng-model="course.LectureTimes" list="lecture-times" class="input-floater" ng-value="currentCourse.LectureTimes" />
+                  <i ng-show="(newCourse.times.$touched && !timesValid(course.time)) || (newCourse.times.$touched && newCourse.times.$invalid)" class="material-icons validation-error">error</i>
+                  <i ng-show="newCourse.times.$touched && newCourse.times.$valid && timesValid(course.time)" class="material-icons validation-good">check_circle</i>
+
+                </div>
+
+                <div class="input-panel">
+                  <input placeholder="Trimester" name="trimester" ng-model="course.Trimester" list="tris" class="input-floater" ng-value="currentCourse.Trimester" />
+                  <i ng-show="(newCourse.trimester.$touched && !trimesterValid(course.Trimester)) || (newCourse.trimester.$touched && newCourse.trimester.$invalid)" class="material-icons validation-error">error</i>
+                  <i ng-show="newCourse.trimester.$touched && newCourse.trimester.$valid && trimesterValid(course.Trimester)" class="material-icons validation-good">check_circle</i>
+
+                </div>
+
+                <div class="input-panel">
+                  <input name="year" ng-model="course.year" list="years" placeholder="Year" class="input-floater" ng-value="currentCourse.Year" />
+                  <i ng-show="(newCourse.year.$touched && !yearValid(course.year)) || (newCourse.year.$touched && newCourse.year.$invalid)" class="material-icons validation-error">error</i>
+                  <i ng-show="newCourse.year.$touched && newCourse.year.$valid && yearValid(course.year )" class="material-icons validation-good">check_circle</i>
+                </div>
+
+                <div class="input-panel">
+                  <button ng-click="saveChanges(course)" class="primary">Save Course</button>
+                  <button class="secondary" ng-click="closeEditCourseModal()">Close</button>
+                </div>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+      <!--Menu-->
+      <div class="header">
+        <i ng-click="openHome()" class="material-icons header-logo">account_balance</i>
+        <span class="header-logo-subtitle">VBS</span>
+        <ul>
+          <button ng-click="openDirectory()" Class="left-button"><i class="material-icons">list</i> Course Directory</button>
+          <button ng-if="currentUser.UserType == 'student'" ng-click="openFeed()" Class="left-button"><i class="material-icons">assignment_ind</i> Course Feed</button>
+          <button ng-if="currentUser.UserType == 'student'" ng-click="openAssignments()" Class="left-button"><i class="material-icons">assignment</i> My Assignments</button>
+          <button Class="right-button" ng-click="logout()"><i class="material-icons">account_box</i></button>
+        </ul>
+      </div>
+      <div class="mobile-menu" ng-click="toggleMobileMenu()">
+        <div class="bar" id="top"></div>
+        <div class="bar" id="center"></div>
+        <div class="bar" id="bottom"></div>
+      </div>
+      <div class="course-header">
+        <ul>
+          <li>
+            <div id="home-tab" class="active-tab tab" ng-click="changeTab('home')"><i class="material-icons">home</i> Home</div>
+          </li>
+          <li>
+            <div id="assignments-tab" class="tab" ng-click="changeTab('assignments')"><i class="material-icons">assignment</i> Assignments</div>
+          </li>
+          <li>
+            <div id="timetable-tab" class="tab" ng-click="changeTab('timetable')"><i class="material-icons">date_range</i> Timetable</div>
+          </li>
+          <li>
+            <div id="contact-tab" class="tab" ng-click="changeTab('contact')"><i class="material-icons">mail</i> Contact</div>
+          </li>
+        </ul>
+      </div>
+      <div class="buffer"></div>
+      <div class="body">
+        <div class="container">
+          <div class="course-heading">
+            <h1 class="course-title">{{currentCourse.ID}}    <span class="course-subtitle">{{currentCourse.Name}}</span></h1>
+          </div>
+
+          <div class="course-home course-sub-page" ng-show="courseView == 'home'">
+            <h2 class="course-sub-page-title">{{courseView.charAt(0).toUpperCase() + courseView.slice(1)}}</h2>
+            <p>{{currentCourse.Overview}}</p>
+            <button ng-if="currentUser.UserType === 'lecturer'" ng-click="openEditCourseModal()" class="edit-course">Edit Course</button>
+            <button ng-click="addCourseToFeed(currentCourse)" ng-if="currentUser.UserType === 'student'" class="edit-course">Add Course to Feed</button>
+
+
+
+          </div>
+          <div class="course-assignments course-sub-page" ng-show="courseView == 'assignments'">
+            <h2 class="course-sub-page-title">{{courseView.charAt(0).toUpperCase() + courseView.slice(1)}}</h2>
+            <p>You can find a list of all the Assignments for {{currentCourse.ID}} in the table below.</p>
+            <p ng-if="currentUser.UserType == 'lecturer'">Add a new Assignment by clicking the Add Assignment button.</p>
+            <p ng-if="currentUser.UserType == 'lecturer'">
+              You can edit the details of, or delete an Assignment by clicking the icons next to it.
+            </p>
+            <button ng-click="openAddAssignmentsModal()" class="add-assignment">Add an Assignment</button>
+            
+            <div class="course-table assignments-table">
+              <table>
+                <tr class="heading">
+                  <th class="assignment-name-col">Assignment Name</th>
+                  <th class="overview-col">Overview</th>
+                  <th class="date-col">DueDate</th>
+                  <th ng-if="currentUser.UserType == 'lecturer'" class="edit-col">Edit</th>
+                  <th ng-if="currentUser.UserType == 'lecturer'" class="delete-col">Delete</th>
+                </tr>
+                <tr ng-repeat="x in assignments" ng-if="x.CourseID == currentCourse.ID" id="{{x.CourseID}}-{{x.Name}}">
+                  <td class="assignment-name-col">{{x.Name}}</td>
+                  <td class="overview-col">{{x.Overview}}</td>
+                  <td class="date-col">{{x.DueDate}}</td>
+                  <td ng-if="currentUser.UserType == 'lecturer'" class="edit-col"><i ng-click="openAssignmentsModal(x)" class="material-icons edit">edit</i></td>
+                  <td ng-if="currentUser.UserType == 'lecturer'" class="delete-col"><i ng-click="deleteAssignment(x)" class="material-icons delete">delete</i></td>
+                </tr>
+              </table>
+            </div>
+            <div id="assignment-notif">
+              <i class="material-icons">check_circle</i> {{currentAssignment.Name}} has been updated.
+            </div>
+          </div>
+          <div class="course-timetable course-sub-page" ng-show="courseView == 'timetable'">
+            <h2 class="course-sub-page-title">{{courseView.charAt(0).toUpperCase() + courseView.slice(1)}}</h2> You can find the Lecture Times for {{currentCourse.ID}} on the weekly calender below.
+            <p>Current Lecture Time for {{currentCourse.ID}}: {{currentCourse.LectureTimes}}.</p>
+            <div class="calender">
+              <table>
+                <thead>
+                  <tr class="heading">
+                    <th></th>
+                    <th id="mn">Mn</th>
+                    <th id="tu">Tu</th>
+                    <th id="wd">Wd</th>
+                    <th id="th">Th</th>
+                    <th id="fr">Fr</th>
+                    <th id="sa">Sa</th>
+                    <th id="su">Su</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr ng-repeat="slot in numberOfHalfHours track by $index">
+                    <td id={{slot}} class="slot-title"><span ng-if="$index % 2 === 0">{{slot}}</span></td>
+                    <td id="{{numberOfDays[$index]}}-{{slot}}" ng-repeat="day in numberOfDays track by $index"></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="course-contact course-sub-page" ng-show="courseView == 'contact'">
+            <h2 class="course-sub-page-title">{{courseView.charAt(0).toUpperCase() + courseView.slice(1)}}</h2>
+            <div class="contact-card">
+              <div class="icon">
+                <i class="material-icons">contact_mail</i>
+              </div>
+              <div class="detail">
+                <h2>Course Lecturer</h2>
+                <span>{{currentLecturer.ID}}</span>
+                <ul>
+                  <li>
+                    <i class="material-icons">email</i><a href="mailto:{{currentLecturer.contact}}"> {{currentLecturer.contact}}</a>
+                  </li>
+                  <li>
+                    <i class="material-icons">phone</i><a href="tel:04 444 4444"> 04 444 4444</a>
+                  </li>
+                  <li>
+                    <i class="material-icons">location_on</i><a href="#"> {{currentLecturer.office}}</a>
+                  </li>
+                </ul>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </div>
+      <div id="course-edited-notif">
+        <i class="material-icons">check_circle</i> {{currentCourse.ID}} - {{currentCourse.Name}} has been updated.
+      </div>
+      <div id="course-added-feed-notif">
+        <i class="material-icons">check_circle</i> {{currentCourse.ID}} - {{currentCourse.Name}} was added to your feed.
+      </div>
+    </div>
+    <div class="assignments-view view" id="assignments" ng-show="view == 'assignments'">
+      <div id="mobile-overlay">
+        <ul id="mobile-menu-options">
+          <h1>Menu</h1>
+          <li ng-click="openDirectory()">Course Directory</li>
+          <li ng-click="openFeed()" ng-if="currentUser.UserType == 'student'">Course Feed</li>
+          <li ng-click="openAssignments()" ng-if="currentUser.UserType == 'student'">Assignments</li>
+          <hr/>
+          <h2 ng-if="currentCourse.ID !== undefined">{{currentCourse.Name}}</h2>
+          <li ng-click="changeTab('home')" ng-if="currentCourse.ID !== undefined">Home</li>
+          <li ng-click="changeTab('assignments')" ng-if="currentCourse.ID !== undefined">Assignments</li>
+          <li ng-click="changeTab('timetable')" ng-if="currentCourse.ID !== undefined">Timetable</li>
+          <li ng-click="changeTab('contact')" ng-if="currentCourse.ID !== undefined">Contact</li>
+          <li ng-click="logout()">Logout</li>
+        </ul>
+      </div>
+      <div class="header">
+        <i ng-click="openHome()" class="material-icons header-logo">account_balance</i>
+        <span class="header-logo-subtitle">VBS</span>
+        <ul>
+          <button ng-click="openDirectory()" Class="left-button"><i class="material-icons">list</i> Course Directory</button>
+          <button ng-if="currentUser.UserType == 'student'" ng-click="openLectCourses()" Class="left-button"><i class="material-icons">assignment_ind</i> Course Feed</button>
+          <button ng-if="currentUser.UserType == 'student'" ng-click="openAssignments()" Class="left-button"><i class="material-icons">assignment</i> My Assignments</button>
+          <button Class="right-button" ng-click="logout()"><i class="material-icons">account_box</i></button>
+        </ul>
+      </div>
+      <div class="mobile-menu" ng-click="toggleMobileMenu()">
+        <div class="bar" id="top"></div>
+        <div class="bar" id="center"></div>
+        <div class="bar" id="bottom"></div>
+      </div>
+      <div class="body">
+        <div class="container">
+          <h1>My Assignments</h1>
+          <p>You can find all the assignments you have due in for all your Courses here.</p>
+          <p>Check them off when you're done by clicking the tick.</p>
+          <div class="course-table assignments-table">
+            <table>
+              <tr class="heading">
+                <th class="course-name-col">Course</th>
+                <th class="assignment-name-col">Assignment Name</th>
+                <th class="overview-col">Overview</th>
+                <th class="date-col">DueDate</th>
+                <th class="done-col">Done</th>
+              </tr>
+              <tr ng-repeat="x in assignments track by $index" id="{{x.CourseID}}-{{x.Name}}">
+                <td class="course-name-col">{{x.CourseID}}</td>
+                <td class="assignment-name-col">{{x.Name}}</td>
+                <td class="overview-col">{{x.Overview}}</td>
+                <td class="date-col">{{x.DueDate}}</td>
+                <td ng-click="checkOffAssignment(x)" class="done-col"><i class="material-icons hidden-icon">check_circle</i></td>
+              </tr>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="script.js"></script>
+</body>
+
+</html>
